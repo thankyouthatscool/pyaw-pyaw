@@ -1,58 +1,43 @@
-import React from 'react';
-import logo from './logo.svg';
-import { Counter } from './features/counter/Counter';
-import './App.css';
+import { useEffect, useRef } from "react";
 
-function App() {
+import { Sidebar, UserSelectionModal } from "./components";
+import { useAuthHooks, useUiHooks } from "./hooks";
+import { ContentWrapper, RootWrapper, SideBarWrapper } from "./Styled";
+
+export const App = () => {
+  const { handleConnectSock, handleDisconnectSock, user } = useAuthHooks();
+  const { isSidebarOpen, handleUserSelectionModalToggle } = useUiHooks();
+
+  const initialLoadRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true;
+      if (!user) {
+        handleUserSelectionModalToggle();
+      }
+    }
+  }, [handleUserSelectionModalToggle, initialLoadRef, user]);
+
+  useEffect(() => {
+    if (!!user) {
+      handleConnectSock();
+    }
+
+    if (!user) {
+      handleDisconnectSock();
+    }
+  }, [handleConnectSock, handleDisconnectSock, user]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <Counter />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <span>
-          <span>Learn </span>
-          <a
-            className="App-link"
-            href="https://reactjs.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux
-          </a>
-          <span>, </span>
-          <a
-            className="App-link"
-            href="https://redux-toolkit.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Redux Toolkit
-          </a>
-          ,<span> and </span>
-          <a
-            className="App-link"
-            href="https://react-redux.js.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            React Redux
-          </a>
-        </span>
-      </header>
-    </div>
+    <RootWrapper>
+      {!user && <UserSelectionModal />}
+      {isSidebarOpen && (
+        <SideBarWrapper>
+          <Sidebar />
+        </SideBarWrapper>
+      )}
+      <ContentWrapper></ContentWrapper>
+    </RootWrapper>
   );
-}
-
-export default App;
+};
