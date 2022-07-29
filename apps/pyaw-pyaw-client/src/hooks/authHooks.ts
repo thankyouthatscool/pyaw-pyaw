@@ -13,7 +13,7 @@ export const useAuthHooks = () => {
 
   const handleConnectSock = useCallback(() => {
     if (!!user) {
-      sock.auth = { userId: user.id, username: user.username };
+      sock.auth = { username: user.username };
 
       sock.connect();
     }

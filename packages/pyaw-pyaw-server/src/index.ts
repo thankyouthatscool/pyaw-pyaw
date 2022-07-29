@@ -1,15 +1,33 @@
 import express from "express";
+import cors from "cors";
 import http from "http";
+import { PrismaClient } from "@prisma/client";
 import { Server } from "socket.io";
+import { isBuffer } from "util";
 
 const app = express();
+
+app.use(express.json());
+app.use(cors());
+
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+
+const prisma = new PrismaClient();
+
+app.post("/login", async (req, res) => {
+  const user = await prisma.users.findFirst({
+    where: { username: req.body.username },
+  });
+
+  res
+    .status(200)
+    .send({ OK: "OK", body: { id: user?.id, username: user?.username } });
+});
 
 io.on("connection", (socket) => {
   console.log(`New client: ${socket.id}`);
   console.log(socket.handshake.auth.username);
-  console.log(socket.handshake.auth.userId);
 
   socket.on("message", (data) => {
     console.log(data);

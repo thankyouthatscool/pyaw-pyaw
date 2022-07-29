@@ -27,8 +27,8 @@ export const UserSelectionModal = () => {
             return (
               <Button
                 color="primary"
-                key={user.id}
-                onClick={() => {
+                key={user.username}
+                onClick={async () => {
                   dispatch(setUser(user));
                   handleUserSelectionModalToggle();
                 }}

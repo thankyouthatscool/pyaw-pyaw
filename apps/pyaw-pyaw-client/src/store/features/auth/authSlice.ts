@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface User {
-  id: string;
+  id?: string;
   username: string;
 }
 
@@ -13,12 +13,12 @@ export interface AuthState {
 
 const initialState: AuthState = {
   availableUsers: [
-    { username: "trevor", id: "0" },
-    { username: "zach", id: "1" },
-    { username: "sam", id: "2" },
-    { username: "timmy", id: "3" },
-    { username: "darren", id: "4" },
-    { username: "sasha", id: "5" },
+    { username: "trevor" },
+    { username: "zach" },
+    { username: "sam" },
+    { username: "timmy" },
+    { username: "darren" },
+    { username: "sasha" },
   ],
   user: null,
   wsConnected: false,
