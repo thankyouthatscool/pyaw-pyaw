@@ -1,40 +1,47 @@
 import { Button, Card, Modal, Typography } from "@mui/material";
+import { useCallback } from "react";
 
-import { useAppSelector, useAppDispatch, useUiHooks } from "../../hooks";
-import { setUser } from "../../store/features";
+import { useAuthHooks } from "../../hooks";
 import { UserSelectionModalWrapper } from "./Styled";
 
 export const UserSelectionModal = () => {
-  const dispatch = useAppDispatch();
+  const { handleSetUser, user } = useAuthHooks();
 
-  const { availableUsers, user } = useAppSelector(({ auth }) => auth);
+  const handleUserSelection = useCallback(
+    async (username: string) => {
+      try {
+        const res = await fetch("http://localhost:5000/login", {
+          body: JSON.stringify({ username }),
+          headers: { "Content-Type": "application/json" },
+          method: "post",
+        });
 
-  const { handleUserSelectionModalToggle } = useUiHooks();
+        const data = await res.json();
+
+        handleSetUser({ ...data });
+      } catch (e) {
+        console.log(e);
+      }
+    },
+    [handleSetUser]
+  );
 
   return (
-    <Modal
-      onClose={() => {
-        if (user) {
-          handleUserSelectionModalToggle();
-        }
-      }}
-      open={!user}
-    >
+    <Modal open={!user}>
       <UserSelectionModalWrapper>
         <Card elevation={9} style={{ padding: "1rem" }}>
           <Typography variant="h4">Available Users</Typography>
-          {availableUsers.map((user) => {
+          {["Trevor", "Darren", "Sam", "Timmy", "Zach"].map((username) => {
             return (
               <Button
                 color="primary"
-                key={user.username}
-                onClick={async () => {
-                  dispatch(setUser(user));
-                  handleUserSelectionModalToggle();
+                key={username}
+                onClick={() => {
+                  handleUserSelection(username);
                 }}
                 variant="contained"
               >
-                {user.username}
+                {username}
               </Button>
             );
           })}

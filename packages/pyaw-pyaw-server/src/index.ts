@@ -3,7 +3,6 @@ import cors from "cors";
 import http from "http";
 import { PrismaClient } from "@prisma/client";
 import { Server } from "socket.io";
-import { isBuffer } from "util";
 
 const app = express();
 
@@ -16,33 +15,48 @@ const io = new Server(server, { cors: { origin: "*" } });
 const prisma = new PrismaClient();
 
 app.post("/login", async (req, res) => {
-  const user = await prisma.users.findFirst({
-    where: { username: req.body.username },
-  });
+  const { username } = req.body;
 
-  res
-    .status(200)
-    .send({ OK: "OK", body: { id: user?.id, username: user?.username } });
+  try {
+    const user = await prisma.user.findFirstOrThrow({
+      where: { username },
+    });
+
+    res.status(200).send({ id: user?.id, username: user?.username });
+  } catch (e) {
+    console.log(e);
+
+    await prisma.user.create({ data: { username } });
+  }
 });
 
-io.on("connection", (socket) => {
-  console.log(`New client: ${socket.id}`);
-  console.log(socket.handshake.auth.username);
+app.get("/peers", async (req, res) => {
+  const peers = await await prisma.sessionData.findMany({
+    include: { user: true },
+  });
+
+  res.status(200).json({ peers });
+});
+
+io.on("connection", async (socket) => {
+  const { id, username } = socket.handshake.auth;
+
+  await Promise.all([
+    await prisma.sessionData.deleteMany({ where: { userId: id } }),
+
+    await prisma.sessionData.create({
+      data: { userId: id, socketId: socket.id },
+    }),
+  ]);
+
+  socket.broadcast.emit("peer-connected", {
+    id,
+    username,
+    socketId: socket.id,
+  });
 
   socket.on("message", (data) => {
     console.log(data);
-  });
-
-  socket.on("getPeers", () => {
-    const peers: string[] = [];
-
-    io.of("/").sockets.forEach((sock) => {
-      if (sock.id !== socket.id) {
-        peers.push(sock.id);
-      }
-    });
-
-    socket.emit("getPeersResponse", peers);
   });
 
   socket.on("privateMessage", (data) => {
@@ -52,8 +66,24 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("disconnect", () => {
-    console.log(`Client ${socket.id} disconnected!`);
+  socket.on("disconnect", async () => {
+    const { id, username } = socket.handshake.auth;
+
+    try {
+      await prisma.sessionData.delete({
+        where: { socketId: socket.id },
+      });
+
+      console.log(`Client ${socket.id} disconnected!`);
+
+      socket.broadcast.emit("peer-disconnected", {
+        id,
+        username,
+        socketId: socket.id,
+      });
+    } catch (e) {
+      console.log(e);
+    }
   });
 });
 

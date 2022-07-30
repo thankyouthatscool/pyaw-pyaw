@@ -1,57 +1,98 @@
 import { useCallback, useEffect, useRef } from "react";
+import { connect } from "socket.io-client";
 
 import { Sidebar, UserSelectionModal } from "./components";
-import { useAuthHooks, useUiHooks } from "./hooks";
+import { useAuthHooks } from "./hooks";
 import { ContentWrapper, RootWrapper, SideBarWrapper } from "./Styled";
 
+const socket = connect("http://localhost:5000", { autoConnect: false });
+
 export const App = () => {
-  const { handleConnectSock, handleDisconnectSock, handleSetUser, user } =
-    useAuthHooks();
-  const { isSidebarOpen, handleUserSelectionModalToggle } = useUiHooks();
+  const {
+    handleSetPeers,
+    handleSetUser,
+    handleSetWsConnected,
+    peers,
+    user,
+    wsConnected,
+  } = useAuthHooks();
 
-  const initialLoadRef = useRef<boolean>(false);
+  const socketInitRef = useRef<boolean>(false);
 
-  const handleLogin = useCallback(async () => {
-    const res = await fetch("http://localhost:5000/login", {
-      body: JSON.stringify({ username: user?.username }),
-      headers: { "Content-Type": "application/json" },
-      method: "post",
-    });
+  const handleGetPeers = useCallback(async () => {
+    if (!!user) {
+      const res = await fetch("http://localhost:5000/peers", {
+        headers: { "Content-Type": "application/json" },
+        method: "get",
+      });
 
-    const data = await res.json();
+      const { peers } = await res.json();
 
-    console.log(data);
-  }, [user]);
+      handleSetPeers(peers.filter((peer: any) => peer.userId !== user!.id));
+    }
+  }, [handleSetPeers, user]);
 
   useEffect(() => {
-    if (!initialLoadRef.current) {
-      initialLoadRef.current = true;
-      if (!user) {
-        handleUserSelectionModalToggle();
+    if (!socketInitRef.current) {
+      if (!!user) {
+        socketInitRef.current = true;
+
+        socket.on("connect", () => {
+          handleSetWsConnected(true);
+
+          handleSetUser({
+            id: user!.id,
+            socketId: socket.id,
+            username: user!.username,
+          });
+        });
+
+        socket.on("peer-connected", (data) => {
+          handleGetPeers();
+        });
+
+        socket.on("peer-disconnected", (data) => {
+          handleGetPeers();
+        });
       }
     }
-  }, [handleUserSelectionModalToggle, initialLoadRef, user]);
+  }, [
+    handleGetPeers,
+    handleSetUser,
+    handleSetWsConnected,
+    socketInitRef,
+    user,
+  ]);
 
   useEffect(() => {
     if (!!user) {
-      handleLogin();
-      handleConnectSock();
+      socket.auth = { id: user.id, username: user.username };
+      socket.connect();
     }
 
     if (!user) {
-      handleDisconnectSock();
+      socket.disconnect();
+
+      handleSetPeers([]);
+      handleSetWsConnected(false);
     }
-  }, [handleConnectSock, handleDisconnectSock, handleLogin, user]);
+  }, [handleSetPeers, handleSetWsConnected, user]);
+
+  useEffect(() => {
+    if (!!wsConnected) {
+      handleGetPeers();
+    }
+  }, [handleGetPeers, wsConnected]);
 
   return (
     <RootWrapper>
-      {!user && <UserSelectionModal />}
-      {isSidebarOpen && (
-        <SideBarWrapper>
-          <Sidebar />
-        </SideBarWrapper>
-      )}
-      <ContentWrapper></ContentWrapper>
+      <UserSelectionModal />
+      <SideBarWrapper>
+        <Sidebar />
+      </SideBarWrapper>
+      <ContentWrapper>
+        <pre>{JSON.stringify({ peers, user, wsConnected }, null, 2)}</pre>
+      </ContentWrapper>
     </RootWrapper>
   );
 };

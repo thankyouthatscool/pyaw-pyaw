@@ -1,25 +1,19 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface User {
-  id?: string;
+export interface User {
+  id: string;
+  socketId?: string;
   username: string;
 }
 
 export interface AuthState {
-  availableUsers: User[];
+  peers: User[];
   user: User | null;
   wsConnected: boolean;
 }
 
 const initialState: AuthState = {
-  availableUsers: [
-    { username: "trevor" },
-    { username: "zach" },
-    { username: "sam" },
-    { username: "timmy" },
-    { username: "darren" },
-    { username: "sasha" },
-  ],
+  peers: [],
   user: null,
   wsConnected: false,
 };
@@ -31,6 +25,9 @@ export const authSlice = createSlice({
     removeUser: (state) => {
       state.user = null;
     },
+    setPeers: (state, { payload }: PayloadAction<User[]>) => {
+      state.peers = payload;
+    },
     setUser: (state, { payload }: PayloadAction<User>) => {
       state.user = payload;
     },
@@ -40,6 +37,7 @@ export const authSlice = createSlice({
   },
 });
 
-export const { removeUser, setUser, setWsConnected } = authSlice.actions;
+export const { removeUser, setPeers, setUser, setWsConnected } =
+  authSlice.actions;
 
 export default authSlice.reducer;

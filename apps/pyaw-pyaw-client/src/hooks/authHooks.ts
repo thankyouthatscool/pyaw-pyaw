@@ -2,14 +2,20 @@ import { useCallback } from "react";
 import { connect } from "socket.io-client";
 
 import { useAppDispatch, useAppSelector } from ".";
-import { removeUser } from "../store/features";
+import {
+  removeUser,
+  setPeers,
+  setUser,
+  setWsConnected,
+} from "../store/features";
+import { User } from "../store/features/auth/authSlice";
 
 const sock = connect("http://localhost:5000", { autoConnect: false });
 
 export const useAuthHooks = () => {
   const dispatch = useAppDispatch();
 
-  const { user } = useAppSelector(({ auth }) => auth);
+  const { peers, user, wsConnected } = useAppSelector(({ auth }) => auth);
 
   const handleConnectSock = useCallback(() => {
     if (!!user) {
@@ -29,13 +35,36 @@ export const useAuthHooks = () => {
     dispatch(removeUser());
   }, [dispatch]);
 
-  const handleSetUser = useCallback(() => {}, []);
+  const handleSetPeers = useCallback(
+    (peers: User[]) => {
+      dispatch(setPeers(peers));
+    },
+    [dispatch]
+  );
+
+  const handleSetUser = useCallback(
+    ({ id, socketId, username }: User) => {
+      dispatch(setUser({ id, socketId, username }));
+    },
+    [dispatch]
+  );
+
+  const handleSetWsConnected = useCallback(
+    (wsState: boolean) => {
+      dispatch(setWsConnected(wsState));
+    },
+    [dispatch]
+  );
 
   return {
     handleConnectSock,
     handleDisconnectSock,
     handleRemoveUser,
+    handleSetPeers,
     handleSetUser,
+    handleSetWsConnected,
+    peers,
     user,
+    wsConnected,
   };
 };

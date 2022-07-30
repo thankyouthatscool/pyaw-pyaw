@@ -3,6 +3,8 @@ import styled from "styled-components";
 export const ContentWrapper = styled.div`
   flex: 5;
 
+  overflow: hidden auto;
+
   width: 100%;
 `;
 
@@ -15,6 +17,8 @@ export const RootWrapper = styled.div`
 `;
 
 export const SideBarWrapper = styled.div`
+  background-color: #eee;
+
   height: 100%;
 
   flex: 1;
