@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from ".";
 import {
   removeUser,
   setPeers,
+  setSelectedPeer,
   setUser,
   setWsConnected,
 } from "../store/features";
@@ -15,7 +16,9 @@ const sock = connect("http://localhost:5000", { autoConnect: false });
 export const useAuthHooks = () => {
   const dispatch = useAppDispatch();
 
-  const { peers, user, wsConnected } = useAppSelector(({ auth }) => auth);
+  const { peers, selectedPeer, user, wsConnected } = useAppSelector(
+    ({ auth }) => auth
+  );
 
   const handleConnectSock = useCallback(() => {
     if (!!user) {
@@ -42,6 +45,13 @@ export const useAuthHooks = () => {
     [dispatch]
   );
 
+  const handleSetSelectedPeer = useCallback(
+    (peer: { id: string; socketId: string; username: string }) => {
+      dispatch(setSelectedPeer(peer));
+    },
+    [dispatch]
+  );
+
   const handleSetUser = useCallback(
     ({ id, socketId, username }: User) => {
       dispatch(setUser({ id, socketId, username }));
@@ -61,9 +71,11 @@ export const useAuthHooks = () => {
     handleDisconnectSock,
     handleRemoveUser,
     handleSetPeers,
+    handleSetSelectedPeer,
     handleSetUser,
     handleSetWsConnected,
     peers,
+    selectedPeer,
     user,
     wsConnected,
   };

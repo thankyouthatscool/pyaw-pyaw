@@ -31,23 +31,52 @@ app.post("/login", async (req, res) => {
 });
 
 app.get("/peers", async (req, res) => {
-  const peers = await await prisma.sessionData.findMany({
+  const peers = await prisma.sessionData.findMany({
     include: { user: true },
   });
 
   res.status(200).json({ peers });
 });
 
+app.post("/getConversation", async (req, res) => {
+  const { recipient, sender } = req.body;
+
+  const messages = await prisma.message.findMany({
+    where: {
+      recipientId: { in: [recipient, sender] },
+      senderId: { in: [recipient, sender] },
+    },
+  });
+
+  res.status(200).json({ messages });
+});
+
+app.post("/privateMessage", async (req, res) => {
+  const { from, message, recipientId, senderId, to } = req.body;
+
+  io.to(to).emit("private-message", { from, message, senderId });
+
+  await prisma.message.create({
+    data: { body: message, recipientId, senderId },
+  });
+
+  res.status(200).json({ message: "Message Sent" });
+});
+
 io.on("connection", async (socket) => {
   const { id, username } = socket.handshake.auth;
 
-  await Promise.all([
-    await prisma.sessionData.deleteMany({ where: { userId: id } }),
+  try {
+    await Promise.all([
+      await prisma.sessionData.deleteMany({ where: { userId: id } }),
 
-    await prisma.sessionData.create({
-      data: { userId: id, socketId: socket.id },
-    }),
-  ]);
+      await prisma.sessionData.create({
+        data: { userId: id, socketId: socket.id },
+      }),
+    ]);
+  } catch (e) {
+    console.log(e);
+  }
 
   socket.broadcast.emit("peer-connected", {
     id,

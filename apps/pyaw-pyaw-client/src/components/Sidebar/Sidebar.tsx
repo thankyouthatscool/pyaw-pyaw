@@ -9,7 +9,8 @@ import {
 } from "./Styled";
 
 export const Sidebar = () => {
-  const { handleRemoveUser, peers, user } = useAuthHooks();
+  const { handleRemoveUser, handleSetSelectedPeer, peers, user } =
+    useAuthHooks();
 
   return (
     <SidebarWrapper>
@@ -37,7 +38,19 @@ export const Sidebar = () => {
           <PeersContainer>
             {peers.map((peer) => {
               return (
-                <Button key={peer.id} variant="contained">
+                <Button
+                  key={peer.id}
+                  onClick={() => {
+                    handleSetSelectedPeer({
+                      // @ts-ignore
+                      id: peer.userId,
+                      socketId: peer.socketId!,
+                      // @ts-ignore
+                      username: peer.user.username,
+                    });
+                  }}
+                  variant="contained"
+                >
                   {/* @ts-ignore */}
                   {peer.user.username}
                 </Button>

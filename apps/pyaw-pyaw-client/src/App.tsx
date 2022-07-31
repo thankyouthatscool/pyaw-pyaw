@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { connect } from "socket.io-client";
 
-import { Sidebar, UserSelectionModal } from "./components";
+import { DirectPeerChat, Sidebar, UserSelectionModal } from "./components";
 import { useAuthHooks } from "./hooks";
 import { ContentWrapper, RootWrapper, SideBarWrapper } from "./Styled";
 
@@ -12,7 +12,7 @@ export const App = () => {
     handleSetPeers,
     handleSetUser,
     handleSetWsConnected,
-    peers,
+    selectedPeer,
     user,
     wsConnected,
   } = useAuthHooks();
@@ -54,6 +54,10 @@ export const App = () => {
         socket.on("peer-disconnected", (data) => {
           handleGetPeers();
         });
+
+        socket.on("private-message", (data) => {
+          console.log(data);
+        });
       }
     }
   }, [
@@ -91,7 +95,41 @@ export const App = () => {
         <Sidebar />
       </SideBarWrapper>
       <ContentWrapper>
-        <pre>{JSON.stringify({ peers, user, wsConnected }, null, 2)}</pre>
+        {!!selectedPeer && (
+          <>
+            <DirectPeerChat />
+            <div>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+
+                  const res = await fetch(
+                    "http://localhost:5000/privateMessage",
+                    {
+                      body: JSON.stringify({
+                        message: "Funk the polis",
+                        from: user?.socketId,
+                        to: selectedPeer.socketId,
+                        senderId: user!.id,
+                        // @ts-ignore
+                        recipientId: selectedPeer.id,
+                      }),
+                      headers: { "Content-Type": "application/json" },
+                      method: "post",
+                    }
+                  );
+
+                  const data = await res.json();
+
+                  console.log(data);
+                }}
+              >
+                {/*          <input defaultValue="message go here" type="text" />
+                <button type="submit">Send</button> */}
+              </form>
+            </div>
+          </>
+        )}
       </ContentWrapper>
     </RootWrapper>
   );
